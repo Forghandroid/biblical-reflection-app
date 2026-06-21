@@ -20,13 +20,13 @@ st.markdown("---")
 
 injil = st.text_area(
     "Masukkan Bacaan Injil",
-    placeholder="Contoh: Matius 6:24-34",
+    placeholder="Contoh: Matius 7:1-5.",
     height=100
 )
 
 pl = st.text_area(
     "Masukkan Bacaan Perjanjian Lama / Bacaan Pertama",
-    placeholder="Contoh: 2 Tawarikh 24:17-25",
+    placeholder="Contoh: 2 Raja raja 17:5-8.13-15a.18",
     height=100
 )
 
