@@ -1,4 +1,7 @@
 import streamlit as st
+import requests
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
 st.set_page_config(
     page_title="Biblical Reflection Tool",
@@ -102,55 +105,220 @@ Amin.
 
 
 # =========================
-# FUNGSI CERITA INSPIRATIF
+# FUNGSI CERITA INSPIRATIF DARI MEDIA ISNET
 # =========================
 
-def kisah_burung_berkicau():
-    return """
-### 🐦 Kisah Inspiratif: Burung yang Tetap Berkicau
+STORY_SOURCES = [
+    {
+        "nama": "Burung Berkicau",
+        "url": "https://media.isnet.org/kmi/sufi/Mello/Burung/index.html"
+    },
+    {
+        "nama": "Doa Sang Katak",
+        "url": "https://media.isnet.org/kmi/sufi/Mello/Katak/index.html"
+    }
+]
 
-Suatu pagi, seekor burung kecil bertengger di dahan pohon setelah semalaman diterpa angin dan hujan. Sayapnya masih basah, sarangnya hampir rusak, dan langit belum sepenuhnya cerah. Namun ketika matahari mulai muncul, burung itu tetap berkicau. Seekor anak kecil yang melihatnya bertanya kepada ayahnya, “Mengapa burung itu masih bernyanyi padahal semalam ia hampir kehilangan sarangnya?” Ayahnya menjawab, “Karena burung itu tidak menunggu hidup sempurna untuk mulai bersyukur.”
-
-Kisah kecil ini mengingatkan kita pada Injil hari ini. Yesus menunjuk burung-burung di udara bukan untuk mengajarkan kemalasan, tetapi untuk menunjukkan kepercayaan yang sederhana kepada pemeliharaan Allah. Burung tetap mencari makan, tetap terbang, tetap membangun sarang, tetapi tidak hidup dalam kecemasan seperti manusia yang lupa percaya. Begitu juga kita, tetaplah bekerja dan berjuang, tetapi jangan biarkan kekhawatiran mencuri nyanyian syukur dari hati kita.
-"""
-
-
-def kisah_gaya_doa_sang_katak():
-    return """
-### 🐸 Kisah Inspiratif Bergaya Reflektif: Katak yang Ingin Didengar Tuhan
-
-Di sebuah kolam kecil, seekor katak selalu merasa doanya tidak seindah suara burung, tidak setenang desir angin, dan tidak semerdu nyanyian manusia di rumah ibadat. Setiap malam ia mencoba diam agar tidak mengganggu, tetapi hatinya tetap ingin memuji Tuhan. Suatu hari ia berkata, “Tuhan, suaraku hanya kroak-kroak kecil, mungkin tidak pantas sampai kepada-Mu.” Lalu dari kedalaman hatinya ia merasa seolah Tuhan berkata, “Aku menciptakanmu dengan suara itu; mengapa engkau takut memuji-Ku dengan apa yang Kuberikan?”
-
-Kisah ini mengingatkan kita bahwa Tuhan tidak meminta kita datang dengan hidup yang sempurna, melainkan dengan hati yang percaya. Banyak orang terlalu cemas karena merasa kurang mampu, kurang pantas, atau kurang berhasil. Padahal, Allah tidak pertama-tama melihat kehebatan kita, tetapi kesetiaan hati kita. Seperti katak kecil itu, kita diajak untuk datang kepada Tuhan apa adanya, bukan dengan hati yang dikuasai kecemasan, tetapi dengan iman yang sederhana.
-"""
-
-
-def cerita_lucu_reflektif():
-    return """
-### 😄 Cerita Lucu Reflektif: Orang yang Terlalu Khawatir
-
-Ada seorang bapak yang setiap malam sulit tidur karena terlalu banyak memikirkan masa depan. Ia khawatir tentang pekerjaan, biaya hidup, cuaca besok, bahkan khawatir kalau nanti ia lupa mengunci pintu. Suatu malam istrinya berkata, “Pak, sudah tidur saja. Tuhan yang menjaga kita.” Bapak itu menjawab, “Iya, Bu. Tapi saya khawatir Tuhan juga sedang sibuk menjaga orang lain.”
-
-Cerita ini lucu, tetapi menyentuh kenyataan hidup kita. Kadang kita percaya kepada Tuhan, tetapi tetap merasa seolah-olah semuanya harus kita kendalikan sendiri. Kita berdoa, tetapi setelah berdoa tetap mengambil kembali semua kecemasan itu. Injil hari ini mengingatkan bahwa percaya kepada Allah berarti berani menyerahkan apa yang memang berada di luar kendali kita, sambil tetap melakukan bagian kita dengan setia.
-"""
+FALLBACK_STORIES = [
+    {
+        "title": "Penyelenggaraan Ilahi dalam Tiga Perahu Penyelamat",
+        "source": "Doa Sang Katak",
+        "url": "https://media.isnet.org/kmi/sufi/Mello/Katak/index.html"
+    },
+    {
+        "title": "Gembala Suka Segala Cuaca",
+        "source": "Doa Sang Katak",
+        "url": "https://media.isnet.org/kmi/sufi/Mello/Katak/index.html"
+    },
+    {
+        "title": "Gereja Hutan",
+        "source": "Doa Sang Katak",
+        "url": "https://media.isnet.org/kmi/sufi/Mello/Katak/index.html"
+    },
+    {
+        "title": "Rajawali dan Ayam",
+        "source": "Doa Sang Katak",
+        "url": "https://media.isnet.org/kmi/sufi/Mello/Katak/index.html"
+    }
+]
 
 
-def menu_kisah():
-    pilihan_kisah = st.radio(
-        "Pilih jenis kisah inspiratif",
-        [
-            "Burung Berkicau",
-            "Gaya Doa Sang Katak",
-            "Cerita Lucu Reflektif"
+@st.cache_data(ttl=86400)
+def ambil_daftar_kisah():
+    daftar_kisah = []
+
+    for sumber in STORY_SOURCES:
+        try:
+            response = requests.get(
+                sumber["url"],
+                timeout=10,
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            for a in soup.find_all("a"):
+                judul = a.get_text(" ", strip=True)
+                href = a.get("href")
+
+                if not judul or not href:
+                    continue
+
+                judul_lower = judul.lower()
+
+                skip_words = [
+                    "indeks", "homepage", "tentang penulis",
+                    "isnet", "sufi", "islam", "burung berkicau",
+                    "doa sang katak"
+                ]
+
+                if any(word in judul_lower for word in skip_words):
+                    continue
+
+                daftar_kisah.append({
+                    "title": judul,
+                    "source": sumber["nama"],
+                    "url": urljoin(sumber["url"], href)
+                })
+
+        except Exception:
+            continue
+
+    if not daftar_kisah:
+        return FALLBACK_STORIES
+
+    return daftar_kisah
+
+
+def buat_kata_kunci(injil_text, pl_text):
+    teks = f"{injil_text} {pl_text}".lower()
+
+    kata_kunci = [
+        "allah", "tuhan", "percaya", "iman", "setia",
+        "kekhawatiran", "cemas", "takut", "khawatir",
+        "pemeliharaan", "penyelenggaraan", "burung",
+        "bunga", "makan", "minum", "pakaian",
+        "mammon", "uang", "materi", "kerajaan",
+        "lepas", "pelepasan", "cuaca", "damai"
+    ]
+
+    if "matius 6" in teks or "mat 6" in teks:
+        kata_kunci += [
+            "penyelenggaraan",
+            "pemeliharaan",
+            "burung",
+            "khawatir",
+            "takut",
+            "percaya",
+            "cuaca",
+            "pelepasan"
         ]
+
+    if "mammon" in teks or "uang" in teks or "harta" in teks:
+        kata_kunci += [
+            "uang",
+            "materi",
+            "pelepasan",
+            "pendapatan",
+            "milik"
+        ]
+
+    return kata_kunci
+
+
+def skor_kisah(kisah, kata_kunci):
+    judul = kisah["title"].lower()
+    sumber = kisah["source"].lower()
+
+    skor = 0
+
+    for kata in kata_kunci:
+        if kata in judul:
+            skor += 5
+
+    # Skor tambahan untuk kisah yang sangat cocok dengan Matius 6:24-34
+    if "penyelenggaraan" in judul:
+        skor += 25
+
+    if "burung" in judul:
+        skor += 20
+
+    if "cuaca" in judul:
+        skor += 15
+
+    if "pelepasan" in judul:
+        skor += 15
+
+    if "doa sang katak" in sumber:
+        skor += 2
+
+    if "burung berkicau" in sumber:
+        skor += 2
+
+    return skor
+
+
+def pilih_kisah_terbaik(injil_text, pl_text):
+    daftar_kisah = ambil_daftar_kisah()
+    kata_kunci = buat_kata_kunci(injil_text, pl_text)
+
+    kisah_terbaik = max(
+        daftar_kisah,
+        key=lambda kisah: skor_kisah(kisah, kata_kunci)
     )
 
-    if pilihan_kisah == "Burung Berkicau":
-        return kisah_burung_berkicau()
-    elif pilihan_kisah == "Gaya Doa Sang Katak":
-        return kisah_gaya_doa_sang_katak()
-    else:
-        return cerita_lucu_reflektif()
+    return kisah_terbaik
+
+
+def alasan_kisah(kisah, injil_text):
+    judul = kisah["title"].lower()
+
+    if "penyelenggaraan" in judul:
+        return """
+Kisah ini dipilih karena sangat dekat dengan tema Injil tentang pemeliharaan Allah. Dalam Matius 6:24-34, Yesus mengajak manusia untuk tidak dikuasai kekhawatiran, sebab Bapa mengetahui kebutuhan hidup manusia. Tema penyelenggaraan ilahi membantu umat memahami bahwa percaya kepada Tuhan bukan berarti pasif, melainkan berani melakukan bagian kita sambil menyerahkan hasilnya kepada Allah.
+"""
+
+    if "burung" in judul:
+        return """
+Kisah ini dipilih karena berhubungan langsung dengan gambaran burung dalam Injil. Yesus menunjuk burung-burung di udara sebagai tanda bahwa Allah memelihara ciptaan-Nya. Melalui kisah ini, umat dapat diajak belajar percaya, bersyukur, dan tidak membiarkan kecemasan merampas damai hati.
+"""
+
+    if "cuaca" in judul:
+        return """
+Kisah ini dipilih karena sesuai dengan tema iman yang tetap tenang dalam berbagai keadaan. Injil mengajarkan bahwa manusia tidak perlu hidup dalam kekhawatiran berlebihan terhadap hari esok. Seperti seseorang yang belajar menerima cuaca apa adanya, orang beriman juga diajak menjalani hidup dengan percaya kepada penyertaan Allah.
+"""
+
+    if "pelepasan" in judul or "pendapatan" in judul:
+        return """
+Kisah ini dipilih karena sejalan dengan ajaran Yesus tentang bahaya keterikatan pada mammon. Injil mengingatkan bahwa manusia tidak dapat mengabdi kepada Allah dan harta sekaligus. Kisah ini dapat membantu umat merenungkan apakah hidupnya masih dikuasai oleh kepemilikan, ambisi, atau rasa takut kehilangan.
+"""
+
+    return """
+Kisah ini dipilih karena memiliki hubungan dengan tema umum bacaan, yaitu kesetiaan, iman, dan perubahan hati manusia. Kisah inspiratif semacam ini dapat membantu umat memahami Sabda Tuhan secara lebih dekat dengan pengalaman hidup sehari-hari. Melalui cerita sederhana, pesan Injil menjadi lebih mudah direnungkan dan diterapkan.
+"""
+
+
+def kisah_inspiratif_otomatis(injil_text, pl_text):
+    kisah = pilih_kisah_terbaik(injil_text, pl_text)
+
+    return f"""
+### 📚 Kisah Inspiratif yang Dipilih Otomatis
+
+**Judul kisah:** {kisah["title"]}  
+**Sumber:** {kisah["source"]}  
+**Link asli:** [{kisah["url"]}]({kisah["url"]})
+
+#### Alasan kisah ini sesuai dengan bacaan
+
+{alasan_kisah(kisah, injil_text)}
+
+#### Cara menyisipkan dalam homili
+
+Kisah ini dapat diletakkan setelah penjelasan Injil, sebelum bagian aplikasi hidup. Setelah menceritakan kisah tersebut secara singkat, pengkhotbah dapat menghubungkannya dengan pertanyaan reflektif: *apakah kita sungguh percaya bahwa Allah memelihara hidup kita, atau kita masih lebih sering dikuasai oleh kekhawatiran dan rasa takut akan masa depan?*
+
+> Catatan: Aplikasi ini menampilkan judul, sumber, link, dan refleksi singkat. Untuk membaca isi lengkap kisah, gunakan link asli di atas.
+"""
 
 
 # =========================
@@ -208,9 +376,9 @@ if st.button("Buat Refleksi"):
         elif menu == "Homili 3 Menit":
             st.markdown(homili_3_menit())
 
-        elif menu == "Kisah / Cerita Inspiratif":
-            st.info("Kisah yang ditampilkan adalah cerita orisinal untuk refleksi, bukan kutipan langsung dari buku tertentu.")
-            st.markdown(menu_kisah())
+       elif menu == "Kisah / Cerita Inspiratif":
+    st.info("Aplikasi memilih salah satu kisah dari indeks Burung Berkicau atau Doa Sang Katak berdasarkan kecocokan tema bacaan. Isi lengkap kisah tidak disalin; aplikasi menampilkan judul, sumber, link, dan alasan relevansi.")
+    st.markdown(kisah_inspiratif_otomatis(injil, pl))
 
         elif menu == "Doa Umat Katolik":
             st.markdown(doa_umat())
@@ -221,8 +389,8 @@ if st.button("Buat Refleksi"):
             st.markdown(relevansi_bacaan())
             st.markdown(call_to_action())
             st.markdown(homili_3_menit())
-            st.info("Kisah berikut adalah cerita orisinal untuk refleksi, bukan kutipan langsung dari buku tertentu.")
-            st.markdown(kisah_burung_berkicau())
+            st.info("Kisah berikut dipilih otomatis dari indeks Burung Berkicau atau Doa Sang Katak berdasarkan kecocokan tema bacaan.")
+st.markdown(kisah_inspiratif_otomatis(injil, pl))
             st.markdown(doa_umat())
 
     else:
