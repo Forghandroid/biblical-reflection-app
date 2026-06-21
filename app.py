@@ -376,9 +376,9 @@ if st.button("Buat Refleksi"):
         elif menu == "Homili 3 Menit":
             st.markdown(homili_3_menit())
 
-       elif menu == "Kisah / Cerita Inspiratif":
-    st.info("Aplikasi memilih salah satu kisah dari indeks Burung Berkicau atau Doa Sang Katak berdasarkan kecocokan tema bacaan. Isi lengkap kisah tidak disalin; aplikasi menampilkan judul, sumber, link, dan alasan relevansi.")
-    st.markdown(kisah_inspiratif_otomatis(injil, pl))
+        elif menu == "Kisah / Cerita Inspiratif":
+            st.info("Aplikasi memilih salah satu kisah dari indeks Burung Berkicau atau Doa Sang Katak berdasarkan kecocokan tema bacaan. Isi lengkap kisah tidak disalin; aplikasi menampilkan judul, sumber, link, dan alasan relevansi.")
+            st.markdown(kisah_inspiratif_otomatis(injil, pl))
 
         elif menu == "Doa Umat Katolik":
             st.markdown(doa_umat())
