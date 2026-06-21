@@ -390,7 +390,7 @@ if st.button("Buat Refleksi"):
             st.markdown(call_to_action())
             st.markdown(homili_3_menit())
             st.info("Kisah berikut dipilih otomatis dari indeks Burung Berkicau atau Doa Sang Katak berdasarkan kecocokan tema bacaan.")
-st.markdown(kisah_inspiratif_otomatis(injil, pl))
+            st.markdown(kisah_inspiratif_otomatis(injil, pl))
             st.markdown(doa_umat())
 
     else:
